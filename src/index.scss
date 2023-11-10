@@ -1,0 +1,69 @@
+body {
+	font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+		"Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif, Helvetica, monospace;
+	display: grid;
+	margin: 0;
+	place-items: center;
+	min-height: 100vh;
+	color: #fff;
+	background: hsl(0 0% 2%);
+	user-select: none;
+}
+
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	--size: 100px;
+	background: linear-gradient(hsl(0 0% 12%) 0 2px, transparent 2px var(--size)) 50% 50% / var(--size) var(--size),
+		linear-gradient(90deg, hsl(0 0% 12%) 0 2px, transparent 2px var(--size)) 50% 50% / var(--size) var(--size);
+	mask: linear-gradient(25deg, white, transparent);
+	z-index: -1;
+}
+
+.neon-green {
+	font-size: 1em;
+	color: rgba(255, 255, 255, 0);
+	text-shadow: 0em 0em 3em #83ff00, 0em 0em 2em #83ff00, 1px 1px 5px #83ff00, 0px 0px 15px #83ff00, 1px 0px 0px white,
+		-1px 0px 2px rgba(0, 0, 0, 0.5);
+}
+
+.neon-btn {
+	font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+		"Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif, Helvetica, monospace;
+	position: relative;
+	margin-top: 3rem;
+	padding: 10px 25px;
+	height: 56px;
+	font-weight: 500;
+	font-size: 1rem;
+	color: #ff9aff;
+	background: transparent;
+	border: 1px solid#ff9aff;
+	box-shadow: 0 0 5px #ff9aff, 0 0 5px #ff9aff inset;
+	transition: all 0.3s ease;
+	z-index: 1;
+	cursor: pointer;
+	&::after {
+		content: "";
+		position: absolute;
+		width: 0;
+		height: 100%;
+		top: 0;
+		right: 0;
+		z-index: -1;
+		background: #ff9aff;
+		box-shadow: 0 0 20px #ff9aff;
+		transition: all 0.3s ease;
+	}
+	&:hover {
+		color: #fff;
+	}
+	&:hover::after {
+		left: 0;
+		width: 100%;
+	}
+	&:active {
+		top: 2px;
+	}
+}

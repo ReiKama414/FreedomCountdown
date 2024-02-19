@@ -18,6 +18,10 @@ const CountdownTimer = () => {
 	const [timerId, setTimerId] = useState(null);
 
 	useEffect(() => {
+		calculateEndTime();
+	}, []);
+
+	useEffect(() => {
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
 				calculateEndTime();

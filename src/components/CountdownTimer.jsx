@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { Container, Typography, Box, Select, MenuItem, LinearProgress } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -7,7 +7,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import zhTW from "date-fns/locale/zh-TW";
 
 const CountdownTimer = () => {
-	const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 10) + "T09:00");
+	const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 10) + "T08:00");
 	const [workHours, setWorkHours] = useState(8);
 	const [breakDuration, setBreakDuration] = useState(60);
 	const [endTime, setEndTime] = useState("");
@@ -15,8 +15,26 @@ const CountdownTimer = () => {
 	const [todayAttendance, setTodayAttendance] = useState(null);
 	const [daysWorked, setDaysWorked] = useState(0);
 	const [totalWorkDays, setTotalWorkDays] = useState(0);
+	const [timerId, setTimerId] = useState(null);
+
+	useEffect(() => {
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				calculateEndTime();
+			} else {
+				clearInterval(timerId);
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+		};
+	}, []);
 
 	const calculateEndTime = () => {
+		clearInterval(timerId);
+
 		// 解析上班時間字串為 Date 物件
 		const start = new Date(startTime);
 		const end = new Date(start);
@@ -35,13 +53,14 @@ const CountdownTimer = () => {
 		const countdownTime = end - now;
 		setCountdown(countdownTime);
 
-		console.log(end);
-		console.log(now);
+		// console.log(end);
+		// console.log(now);
 
 		// 設定計時器，每秒更新倒數時間
 		const timer = setInterval(() => {
 			setCountdown((prevCountdown) => prevCountdown - 1000);
 		}, 1000);
+		setTimerId(timer);
 
 		// 設定定時器，倒數結束後清除計時器
 		setTimeout(() => {
@@ -62,6 +81,12 @@ const CountdownTimer = () => {
 		const daysWorkedOfMonth = countWorkDays(firstDayOfMonth, now);
 		setDaysWorked(daysWorkedOfMonth);
 	};
+
+	useEffect(() => {
+		return () => {
+			clearInterval(timerId);
+		};
+	}, [timerId]);
 
 	// 判斷是否為出勤日
 	const isWorkingDay = (date) => {
@@ -127,6 +152,7 @@ const CountdownTimer = () => {
 							<MenuItem value={90}>90 分鐘</MenuItem>
 							<MenuItem value={60}>60 分鐘</MenuItem>
 							<MenuItem value={30}>30 分鐘</MenuItem>
+							<MenuItem value={0}>0 分鐘</MenuItem>
 						</Select>
 					</Box>
 				</Box>

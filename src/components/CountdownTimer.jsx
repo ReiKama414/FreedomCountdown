@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
+import "dayjs/locale/zh-tw";
 import { Container, Typography, Box, Select, MenuItem, LinearProgress } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import zhTW from "date-fns/locale/zh-TW";
 
 const CountdownTimer = () => {
 	const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 10) + "T08:00");
@@ -15,7 +15,8 @@ const CountdownTimer = () => {
 	const [todayAttendance, setTodayAttendance] = useState(null);
 	const [daysWorked, setDaysWorked] = useState(0);
 	const [totalWorkDays, setTotalWorkDays] = useState(0);
-	const [timerId, setTimerId] = useState(null);
+	const timerRef = useRef(null);
+	const timeoutRef = useRef(null);
 
 	useEffect(() => {
 		calculateEndTime();
@@ -25,8 +26,8 @@ const CountdownTimer = () => {
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
 				calculateEndTime();
-			} else {
-				clearInterval(timerId);
+			} else if (timerRef.current) {
+				clearInterval(timerRef.current);
 			}
 		};
 
@@ -37,10 +38,18 @@ const CountdownTimer = () => {
 	}, []);
 
 	const calculateEndTime = () => {
-		clearInterval(timerId);
+		if (timerRef.current) {
+			clearInterval(timerRef.current);
+		}
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+		}
 
 		// 解析上班時間字串為 Date 物件
-		const start = new Date(startTime);
+		const start =
+			typeof startTime === "string" || startTime instanceof Date
+				? new Date(startTime)
+				: new Date(startTime.valueOf());
 		const end = new Date(start);
 
 		// 加上上班時數
@@ -64,13 +73,17 @@ const CountdownTimer = () => {
 		const timer = setInterval(() => {
 			setCountdown((prevCountdown) => prevCountdown - 1000);
 		}, 1000);
-		setTimerId(timer);
+		timerRef.current = timer;
 
 		// 設定定時器，倒數結束後清除計時器
-		setTimeout(() => {
-			clearInterval(timer);
-			setCountdown(null);
-		}, countdownTime);
+		if (countdownTime > 0) {
+			timeoutRef.current = setTimeout(() => {
+				if (timerRef.current) {
+					clearInterval(timerRef.current);
+				}
+				setCountdown(0);
+			}, countdownTime);
+		}
 
 		// 判斷今天是否為出勤日
 		setTodayAttendance(isWorkingDay(now));
@@ -88,9 +101,14 @@ const CountdownTimer = () => {
 
 	useEffect(() => {
 		return () => {
-			clearInterval(timerId);
+			if (timerRef.current) {
+				clearInterval(timerRef.current);
+			}
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
 		};
-	}, [timerId]);
+	}, []);
 
 	// 判斷是否為出勤日
 	const isWorkingDay = (date) => {
@@ -123,13 +141,14 @@ const CountdownTimer = () => {
 
 			<Box display="flex" flexDirection="column" alignItems="center" marginTop={2}>
 				<p className="neon-green">上班時間</p>
-				<LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={zhTW}>
+				<LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="zh-tw">
 					<TimePicker
-						defaultValue={dayjs(startTime)}
-						dayOfWeekFormatter={(_day, weekday) => {
-							console.log(); // AVOID BUG
+						value={dayjs(startTime)}
+						onChange={(value) => {
+							if (value) {
+								setStartTime(value.toDate());
+							}
 						}}
-						onAccept={(data) => setStartTime(data)}
 						sx={[
 							{
 								width: "100%",
@@ -177,10 +196,26 @@ const CountdownTimer = () => {
 					</Typography>
 				)}
 
-				{countdown !== null && (
-					<Typography variant="h5" align="center" style={{ marginTop: "20px" }}>
-						倒數時間：{new Date(countdown).toISOString().substr(11, 8)}
-					</Typography>
+				{countdown !== null && countdown >= 0 && (
+					<>
+						<Typography variant="h5" align="center" style={{ marginTop: "20px" }}>
+							倒數時間：{new Date(countdown).toISOString().substr(11, 8)}
+						</Typography>
+						<Typography variant="body1" align="center" style={{ marginTop: "8px" }}>
+							今天已完成 {(1 - countdown / (workHours * 60 * 60 * 1000)) * 100 > 0
+								? Math.min(
+										100,
+										Math.max(
+											0,
+											Math.round(
+												(1 - countdown / (workHours * 60 * 60 * 1000)) * 100
+											)
+										)
+								  )
+								: 0}
+							% 的 Freedom 行程
+						</Typography>
+					</>
 				)}
 
 				{totalWorkDays > 0 && (
@@ -189,7 +224,7 @@ const CountdownTimer = () => {
 					</Typography>
 				)}
 
-				{countdown !== null && (
+				{countdown !== null && totalWorkDays > 0 && (
 					<Box style={{ width: "100%", marginTop: "20px" }}>
 						<LinearProgress
 							variant="determinate"

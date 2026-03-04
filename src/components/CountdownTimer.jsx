@@ -1,10 +1,32 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/zh-tw";
 import { Container, Typography, Box, Select, MenuItem, LinearProgress } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+
+// 判斷是否為出勤日（模組層級，避免成為 Hook 依賴）
+const isWorkingDay = (date) => {
+	// 這裡假設星期一到星期五為出勤日
+	const day = date.getDay();
+	return day >= 1 && day <= 5;
+};
+
+// 計算指定範圍內的出勤日數（模組層級）
+const countWorkDays = (startDate, endDate) => {
+	let count = 0;
+	let currentDate = new Date(startDate);
+
+	while (currentDate <= endDate) {
+		if (isWorkingDay(currentDate)) {
+			count++;
+		}
+		currentDate.setDate(currentDate.getDate() + 1);
+	}
+
+	return count;
+};
 
 const CountdownTimer = () => {
 	const [startTime, setStartTime] = useState(new Date().toISOString().slice(0, 10) + "T08:00");
@@ -18,26 +40,7 @@ const CountdownTimer = () => {
 	const timerRef = useRef(null);
 	const timeoutRef = useRef(null);
 
-	useEffect(() => {
-		calculateEndTime();
-	}, []);
-
-	useEffect(() => {
-		const handleVisibilityChange = () => {
-			if (document.visibilityState === "visible") {
-				calculateEndTime();
-			} else if (timerRef.current) {
-				clearInterval(timerRef.current);
-			}
-		};
-
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () => {
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-		};
-	}, []);
-
-	const calculateEndTime = () => {
+	const calculateEndTime = useCallback(() => {
 		if (timerRef.current) {
 			clearInterval(timerRef.current);
 		}
@@ -97,7 +100,26 @@ const CountdownTimer = () => {
 		// 計算當前月份已經出勤的日數
 		const daysWorkedOfMonth = countWorkDays(firstDayOfMonth, now);
 		setDaysWorked(daysWorkedOfMonth);
-	};
+	}, [startTime, workHours, breakDuration]);
+
+	useEffect(() => {
+		calculateEndTime();
+	}, [calculateEndTime]);
+
+	useEffect(() => {
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") {
+				calculateEndTime();
+			} else if (timerRef.current) {
+				clearInterval(timerRef.current);
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+		};
+	}, [calculateEndTime]);
 
 	useEffect(() => {
 		return () => {
@@ -109,29 +131,6 @@ const CountdownTimer = () => {
 			}
 		};
 	}, []);
-
-	// 判斷是否為出勤日
-	const isWorkingDay = (date) => {
-		// TODO: 根據實際需求判斷是否為出勤日
-		// 這裡假設星期一到星期五為出勤日
-		const day = date.getDay();
-		return day >= 1 && day <= 5;
-	};
-
-	// 計算指定範圍內的出勤日數
-	const countWorkDays = (startDate, endDate) => {
-		let count = 0;
-		let currentDate = new Date(startDate);
-
-		while (currentDate <= endDate) {
-			if (isWorkingDay(currentDate)) {
-				count++;
-			}
-			currentDate.setDate(currentDate.getDate() + 1);
-		}
-
-		return count;
-	};
 
 	return (
 		<Container maxWidth="sm">
@@ -202,7 +201,8 @@ const CountdownTimer = () => {
 							倒數時間：{new Date(countdown).toISOString().substr(11, 8)}
 						</Typography>
 						<Typography variant="body1" align="center" style={{ marginTop: "8px" }}>
-							今天已完成 {(1 - countdown / (workHours * 60 * 60 * 1000)) * 100 > 0
+							今天已完成{" "}
+							{(1 - countdown / (workHours * 60 * 60 * 1000)) * 100 > 0
 								? Math.min(
 										100,
 										Math.max(
@@ -213,7 +213,7 @@ const CountdownTimer = () => {
 										)
 								  )
 								: 0}
-							% 的 Freedom 行程
+							% 的工時
 						</Typography>
 					</>
 				)}

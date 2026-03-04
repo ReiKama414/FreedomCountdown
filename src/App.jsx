@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import CountdownTimer from "./components/CountdownTimer";
 import { ThemeProvider } from "@mui/material/styles";
-import theme from "./utils/theme";
+import { CssBaseline } from "@mui/material";
+import { getAppTheme } from "./utils/theme";
 
 function App() {
+	const theme = useMemo(() => getAppTheme("dark"), []);
+
 	return (
 		<ThemeProvider theme={theme}>
+			<CssBaseline />
 			<div className="app-shell">
 				<CountdownTimer />
 				<footer className="app-footer">

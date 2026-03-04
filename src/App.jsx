@@ -6,7 +6,18 @@ import theme from "./utils/theme";
 function App() {
 	return (
 		<ThemeProvider theme={theme}>
-			<CountdownTimer />
+			<div className="app-shell">
+				<CountdownTimer />
+				<footer className="app-footer">
+					<p className="app-footer-main">
+						FreedomCountdown · crafted by{" "}
+						<a href="https://reikama414.vercel.app/" target="_blank" rel="noreferrer">
+							ReiKama414
+						</a>
+					</p>
+					<p className="app-footer-sub">每天離自由更近一點。</p>
+				</footer>
+			</div>
 		</ThemeProvider>
 	);
 }
